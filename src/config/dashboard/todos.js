@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { Card, Button, Modal, Input, message, Spin } from "antd";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "firebase/firestore";
-import { db } from '../configfirebase';
+import { db } from "../configfirebase";
+import { format } from "date-fns";
 
 const Todos = () => {
     const [todos, setTodos] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingTodo, setEditingTodo] = useState(null);
     const [newTodoText, setNewTodoText] = useState("");
@@ -24,13 +26,20 @@ const Todos = () => {
         return unsubscribe;
     }, []);
 
+    // Helper function for validation
+    const validateTask = (task) => {
+        if (!task.trim()) {
+            message.error("Task cannot be empty!");
+            return false;
+        }
+        return true;
+    };
+
     // Add a new todo to Firestore
     const addTodo = async () => {
-        if (!newTodoText.trim()) {
-            message.error("Please enter a task!");
-            return;
-        }
+        if (!validateTask(newTodoText)) return;
 
+        setActionLoading(true);
         try {
             await addDoc(collection(db, "todos"), {
                 text: newTodoText,
@@ -41,6 +50,8 @@ const Todos = () => {
             setNewTodoText("");
         } catch (error) {
             message.error("Error adding task: " + error.message);
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -53,11 +64,9 @@ const Todos = () => {
 
     // Edit an existing todo
     const editTodo = async () => {
-        if (!newTodoText.trim()) {
-            message.error("Task cannot be empty!");
-            return;
-        }
+        if (!validateTask(newTodoText)) return;
 
+        setActionLoading(true);
         try {
             const todoRef = doc(db, "todos", editingTodo.id);
             await updateDoc(todoRef, { text: newTodoText });
@@ -67,17 +76,27 @@ const Todos = () => {
             setNewTodoText("");
         } catch (error) {
             message.error("Error updating task: " + error.message);
+        } finally {
+            setActionLoading(false);
         }
     };
 
-    // Delete a todo from Firestore
-    const deleteTodo = async (todoId) => {
-        try {
-            await deleteDoc(doc(db, "todos", todoId));
-            message.success("Task deleted successfully!");
-        } catch (error) {
-            message.error("Error deleting task: " + error.message);
-        }
+    // Delete a todo with confirmation
+    const deleteTodo = (todoId) => {
+        Modal.confirm({
+            title: "Are you sure you want to delete this task?",
+            okText: "Yes",
+            okType: "danger",
+            cancelText: "No",
+            onOk: async () => {
+                try {
+                    await deleteDoc(doc(db, "todos", todoId));
+                    message.success("Task deleted successfully!");
+                } catch (error) {
+                    message.error("Error deleting task: " + error.message);
+                }
+            },
+        });
     };
 
     if (loading) {
@@ -104,40 +123,41 @@ const Todos = () => {
 
             {/* Todo List */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 place-items-center">
-    {todos.map((todo) => (
-        <Card
-            key={todo.id}
-            className="p-8 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-500 text-white shadow-2xl rounded-3xl transform transition-all duration-300 hover:scale-105 hover:shadow-xl max-w-xs w-full"
-        >
-            {/* Todo Text */}
-            <p className="text-xl font-semibold text-center mb-6">{todo.text}</p>
+                {todos.map((todo) => (
+                    <Card
+                        key={todo.id}
+                        className="p-8 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-500 text-white shadow-2xl rounded-3xl transform transition-all duration-300 hover:scale-105 hover:shadow-xl max-w-xs w-full"
+                    >
+                        {/* Todo Text */}
+                        <p className="text-xl font-semibold text-center mb-4">{todo.text}</p>
+                        {/* Timestamp */}
+                        <p className="text-sm text-gray-300 text-center mb-6">
+                            {todo.timestamp ? format(todo.timestamp.toDate(), "dd MMM yyyy hh:mm a") : ""}
+                        </p>
 
-            {/* Buttons Section */}
-            <div className="flex flex-col gap-4 items-center">
-                {/* Edit Button */}
-                <Button
-                    icon={<EditOutlined />}
-                    onClick={() => openEditModal(todo)}
-                    className="bg-yellow-400 hover:bg-yellow-500 text-white rounded-full px-6 py-2 transition-transform transform hover:scale-110 duration-200"
-                >
-                    Edit
-                </Button>
-                {/* Delete Button */}
-                <Button
-                    icon={<DeleteOutlined />}
-                    danger
-                    onClick={() => deleteTodo(todo.id)}
-                    className="bg-red-500 hover:bg-red-600  rounded-full px-6 py-2 transition-transform transform hover:scale-110 duration-200"
-                >
-                    Delete
-                </Button>
+                        {/* Buttons Section */}
+                        <div className="flex flex-col gap-4 items-center">
+                            {/* Edit Button */}
+                            <Button
+                                icon={<EditOutlined />}
+                                onClick={() => openEditModal(todo)}
+                                className="bg-yellow-400 hover:bg-yellow-500 text-white rounded-full px-6 py-2 transition-transform transform hover:scale-110 duration-200"
+                            >
+                                Edit
+                            </Button>
+                            {/* Delete Button */}
+                            <Button
+                                icon={<DeleteOutlined />}
+                                danger
+                                onClick={() => deleteTodo(todo.id)}
+                                className="bg-red-500 hover:bg-red-600 rounded-full px-6 py-2 transition-transform transform hover:scale-110 duration-200"
+                            >
+                                Delete
+                            </Button>
+                        </div>
+                    </Card>
+                ))}
             </div>
-        </Card>
-    ))}
-</div>
-
-
-
 
             {/* Add/Edit Task Modal */}
             <Modal
@@ -149,13 +169,19 @@ const Todos = () => {
                     setNewTodoText("");
                 }}
                 footer={[
-                    <Button key="cancel" onClick={() => setIsModalVisible(false)} className="rounded-md text-xs sm:text-sm">
+                    <Button
+                        key="cancel"
+                        onClick={() => setIsModalVisible(false)}
+                        className="rounded-md text-xs sm:text-sm"
+                    >
                         Cancel
                     </Button>,
                     <Button
                         key="submit"
                         type="primary"
                         onClick={editingTodo ? editTodo : addTodo}
+                        loading={actionLoading}
+                        disabled={actionLoading}
                         className="bg-green-600 hover:bg-green-700 text-white rounded-md text-xs sm:text-sm"
                     >
                         {editingTodo ? "Save" : "Add"}

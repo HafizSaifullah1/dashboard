@@ -3,7 +3,7 @@ import { Card, Button, Modal, Upload, Input, message, Spin } from "antd";
 import { UploadOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
-import { db, storage } from '../configfirebase';
+import { db, storage } from "../configfirebase";
 
 const Photos = () => {
   const [photos, setPhotos] = useState([]);
@@ -11,8 +11,8 @@ const Photos = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  const [editingPhoto, setEditingPhoto] = useState(null); // Track which photo is being edited
-  const [newName, setNewName] = useState(""); // Track updated name
+  const [editingPhoto, setEditingPhoto] = useState(null);
+  const [newName, setNewName] = useState("");
 
   // Fetch photos from Firestore
   const fetchPhotos = async () => {
@@ -27,6 +27,7 @@ const Photos = () => {
       setPhotos(photoList);
     } catch (error) {
       console.error("Error fetching photos:", error);
+      message.error("Failed to load photos. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -36,26 +37,32 @@ const Photos = () => {
     fetchPhotos();
   }, []);
 
-  // Handle file selection and preview
+  // Handle file selection
   const handleFileChange = ({ file }) => {
-    if (file) {
-      setSelectedFile(file);
+    if (file.type.startsWith("image/")) {
+      const selectedBlob = file.originFileObj;
+      setSelectedFile(selectedBlob);
+
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+      reader.onloadend = () => setImagePreview(reader.result);
+      reader.readAsDataURL(selectedBlob);
+    } else {
+      message.error("Invalid file type selected. Please select an image.");
+      setSelectedFile(null);
+      setImagePreview(null);
     }
   };
 
-  // Handle photo upload to Firebase
+  // Upload a photo
   const handleUpload = async () => {
     if (!selectedFile) {
       message.error("Please select a file first!");
       return;
     }
 
-    const storageRef = ref(storage, `photos/${selectedFile.name}`);
+    const uniqueName = `${Date.now()}_${selectedFile.name}`;
+    const storageRef = ref(storage, `photos/${uniqueName}`);
+
     try {
       await uploadBytes(storageRef, selectedFile);
       const downloadURL = await getDownloadURL(storageRef);
@@ -72,49 +79,49 @@ const Photos = () => {
       setImagePreview(null);
       fetchPhotos();
     } catch (error) {
+      console.error("Upload Error:", error);
       message.error("Error uploading photo: " + error.message);
     }
   };
 
-  // Handle delete photo
+  // Delete a photo
   const handleDelete = async (photoId, photoUrl) => {
     try {
       const imageRef = ref(storage, photoUrl);
+      console.log("Deleting file from URL:", photoUrl);
       await deleteObject(imageRef);
-
       await deleteDoc(doc(db, "photos", photoId));
       message.success("Photo deleted successfully!");
-
       fetchPhotos();
     } catch (error) {
+      console.error("Delete Error:", error);
       message.error("Error deleting photo: " + error.message);
     }
   };
 
-  // Open edit modal and set the photo to be edited
+  // Open edit modal
   const openEditModal = (photo) => {
     setEditingPhoto(photo);
     setNewName(photo.name);
     setIsModalVisible(true);
   };
 
-  // Handle photo name update
+  // Save edited photo
   const handleEditSave = async () => {
     if (!newName.trim()) {
       message.error("Name cannot be empty!");
       return;
     }
-
     try {
       const photoRef = doc(db, "photos", editingPhoto.id);
       await updateDoc(photoRef, { name: newName });
       message.success("Photo name updated successfully!");
-
       setIsModalVisible(false);
       setEditingPhoto(null);
       setNewName("");
       fetchPhotos();
     } catch (error) {
+      console.error("Edit Error:", error);
       message.error("Error updating photo: " + error.message);
     }
   };
@@ -128,40 +135,27 @@ const Photos = () => {
   }
 
   return (
-    <div className="p-2 sm:p-4 pt-10 bg-gray-900 text-gray-300 min-h-screen">
-      {/* Navbar */}
-      <div className="flex justify-between items-center mb-4 p-4 bg-gray-800 rounded-lg shadow-md">
+    <div className="p-4 bg-gray-900 text-gray-300 min-h-screen">
+      <div className="flex justify-between items-center mb-6 p-4 bg-gray-800 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold text-white">Photos List</h2>
         <Button
           type="primary"
           onClick={() => setIsModalVisible(true)}
-          className="bg-black hover:bg-gray-700 text-gray-300 font-semibold border-none"
+          className="bg-black hover:bg-gray-700 text-gray-300 border-none"
         >
-          Add Photos
+          Add Photo
         </Button>
       </div>
-
-      {/* Photos Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {photos.map((photo) => (
-          <Card
-            key={photo.id}
-            className="bg-gray-800 shadow-lg rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300"
-          >
-            <div className="relative">
-              <img
-                src={photo.url}
-                alt={photo.name}
-                className="w-full h-48 object-cover rounded-t-lg"
-              />
-            </div>
-
+          <Card key={photo.id} className="bg-gray-800 shadow-lg rounded-lg">
+            <img
+              src={photo.url}
+              alt={photo.name}
+              className="w-full h-48 object-cover rounded-t-lg"
+            />
             <div className="p-4">
               <h3 className="text-white font-semibold mb-2 truncate">{photo.name}</h3>
-            </div>
-
-            {/* Buttons section moved to the bottom */}
-            <div className="flex flex-col justify-between p-4 space-y-2">
               <Button
                 icon={<EditOutlined />}
                 onClick={() => openEditModal(photo)}
@@ -174,7 +168,7 @@ const Photos = () => {
                 icon={<DeleteOutlined />}
                 danger
                 onClick={() => handleDelete(photo.id, photo.url)}
-                className="bg-red-600 hover:bg-red-500 w-full"
+                className="mt-2 w-full"
                 size="small"
               >
                 Delete
@@ -183,12 +177,9 @@ const Photos = () => {
           </Card>
         ))}
       </div>
-
-
-      {/* Add/Edit Photo Modal */}
       <Modal
         title={editingPhoto ? "Edit Photo Name" : "Upload Photo"}
-        open={isModalVisible}  // Replace `visible` with `open`
+        open={isModalVisible}
         onCancel={() => {
           setIsModalVisible(false);
           setEditingPhoto(null);
@@ -196,48 +187,34 @@ const Photos = () => {
           setImagePreview(null);
         }}
         footer={[
-          <Button key="cancel" onClick={() => setIsModalVisible(false)} className="text-gray-300 bg-gray-700 border-none">
+          <Button key="cancel" onClick={() => setIsModalVisible(false)}>
             Cancel
           </Button>,
           <Button
             key="submit"
             type="primary"
             onClick={editingPhoto ? handleEditSave : handleUpload}
-            className="bg-black hover:bg-gray-700 text-gray-300 border-none"
           >
             {editingPhoto ? "Save" : "Upload"}
           </Button>,
         ]}
-        className="bg-gray-900 text-gray-300 max-w-[90%] md:max-w-[60%]"
       >
         {editingPhoto ? (
           <Input
-            placeholder="Edit photo name"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            className="bg-gray-700 text-gray-300 border-none rounded-md"
           />
         ) : (
           <Upload
-            beforeUpload={() => false}
             onChange={handleFileChange}
-            showUploadList={false}
+            accept="image/*"
+            maxCount={1}
+            fileList={[]} 
           >
-            <Button icon={<UploadOutlined />} className="bg-gray-700 text-gray-300 hover:bg-gray-600">
-              Select Photo
-            </Button>
+            <Button icon={<UploadOutlined />}>Select Photo</Button>
           </Upload>
         )}
-        {imagePreview && (
-          <div className="mt-4">
-            <p className="text-gray-400">Preview:</p>
-            <img
-              src={imagePreview}
-              alt="Selected File"
-              className="w-full h-auto rounded-lg border border-gray-600"
-            />
-          </div>
-        )}
+        {imagePreview && <img src={imagePreview} alt="Preview" className="mt-4 w-full" />}
       </Modal>
     </div>
   );

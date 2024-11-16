@@ -2,27 +2,29 @@ import { useState, useEffect } from "react";
 import { Card, Button, Modal, Input, message, Spin } from "antd";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "firebase/firestore";
-import { db } from '../configfirebase';
+import { db } from "../configfirebase"; // Make sure this path points to your Firebase config file
 
 const Albums = () => {
-    const [albums, setAlbums] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [isModalVisible, setIsModalVisible] = useState(false);
-    const [editingAlbum, setEditingAlbum] = useState(null);
-    const [albumName, setAlbumName] = useState("");
+    const [albums, setAlbums] = useState([]); // State to store album data
+    const [loading, setLoading] = useState(true); // Loading spinner state
+    const [isModalVisible, setIsModalVisible] = useState(false); // Modal visibility state
+    const [editingAlbum, setEditingAlbum] = useState(null); // Album being edited
+    const [albumName, setAlbumName] = useState(""); // Input field for album name
 
+    // Fetch albums in real-time from Firestore
     useEffect(() => {
         const unsubscribe = onSnapshot(collection(db, "albums"), (snapshot) => {
             const albumList = snapshot.docs.map((doc) => ({
                 id: doc.id,
                 ...doc.data(),
             }));
-            setAlbums(albumList);
-            setLoading(false);
+            setAlbums(albumList); // Update album list
+            setLoading(false); // Stop loading spinner
         });
-        return unsubscribe;
+        return unsubscribe; // Cleanup listener
     }, []);
 
+    // Add a new album
     const addAlbum = async () => {
         if (!albumName.trim()) {
             message.error("Please enter an album name!");
@@ -42,12 +44,14 @@ const Albums = () => {
         }
     };
 
+    // Open the modal to edit an album
     const openEditModal = (album) => {
         setEditingAlbum(album);
         setAlbumName(album.name);
         setIsModalVisible(true);
     };
 
+    // Update an album
     const editAlbum = async () => {
         if (!albumName.trim()) {
             message.error("Album name cannot be empty!");
@@ -66,6 +70,7 @@ const Albums = () => {
         }
     };
 
+    // Delete an album
     const deleteAlbum = async (albumId) => {
         try {
             await deleteDoc(doc(db, "albums", albumId));
@@ -75,6 +80,7 @@ const Albums = () => {
         }
     };
 
+    // Show a loading spinner while data is being fetched
     if (loading) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -120,7 +126,7 @@ const Albums = () => {
                                 icon={<DeleteOutlined />}
                                 danger
                                 onClick={() => deleteAlbum(album.id)}
-                                className="bg-red-500 hover:bg-red-600  rounded-md"
+                                className="bg-red-500 hover:bg-red-600 rounded-md"
                             >
                                 Delete
                             </Button>
