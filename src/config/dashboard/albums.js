@@ -132,7 +132,7 @@ const Albums = () => {
             {/* Add/Edit Album Modal */}
             <Modal
                 title={editingAlbum ? "Edit Album" : "Add Album"}
-                visible={isModalVisible}
+                open={isModalVisible}
                 onCancel={() => {
                     setIsModalVisible(false);
                     setEditingAlbum(null);

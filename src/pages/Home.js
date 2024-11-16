@@ -1,51 +1,70 @@
-import React from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
-import Users from '../config/dashboard/users';
-import Usersform from '../config/dashboard/usersform';
-import Photos from '../config/dashboard/photos';
-import Comments from '../config/dashboard/comments';
-import Albums from '../config/dashboard/albums';
-import Todos from '../config/dashboard/todos';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Input, Button, message, Card, Typography, Spin } from 'antd';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../config/configfirebase'
+import 'tailwindcss/tailwind.css';
+
+const { Title, Text } = Typography;
 
 function Home() {
-    return (
-        <div className="flex h-screen">
-            {/* Sidebar */}
-            <aside className="w-1/4 bg-gradient-to-b from-purple-700 to-blue-500 text-white p-6 shadow-lg">
-                <h2 className="text-3xl font-bold mb-8 text-center">Dashboard</h2>
-                <nav className="flex flex-col space-y-4">
-                    <Link to="/users" className="p-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-300 text-center font-semibold shadow-md">
-                        Users
-                    </Link>
-                    <Link to="/photos" className="p-3 bg-green-600 hover:bg-green-700 rounded-lg transition-all duration-300 text-center font-semibold shadow-md">
-                        Photos
-                    </Link>
-                    <Link to="/comments" className="p-3 bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-all duration-300 text-center font-semibold shadow-md">
-                        Comments
-                    </Link>
-                    <Link to="/albums" className="p-3 bg-pink-600 hover:bg-pink-700 rounded-lg transition-all duration-300 text-center font-semibold shadow-md">
-                        Albums
-                    </Link>
-                    <Link to="/todos" className="p-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all duration-300 text-center font-semibold shadow-md">
-                        Todos
-                    </Link>
-                </nav>
-            </aside>
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const navigate = useNavigate();
 
-            {/* Main Content */}
-            <main className="w-3/4 bg-gray-100 p-10 overflow-y-auto">
-                <div className="bg-white p-8 rounded-xl shadow-lg">
-                    <Routes>
-                        <Route path="/users" element={<Users />} />
-                        <Route path="/photos" element={<Photos />} />
-                        <Route path="/comments" element={<Comments />} />
-                        <Route path="/todos" element={<Todos />} />
-                        <Route path="/albums" element={<Albums />} />
-                        {/* Additional Routes */}
-                        {/* <Route path="/usersform" element={<Usersform />} /> */}
-                    </Routes>
+    const handleLogin = async () => {
+        setLoading(true);
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            message.success('Welcome Admin!');
+            setIsAuthenticated(true);
+            setTimeout(() => navigate('/dashboard'), 1000);
+        } catch (error) {
+            message.error('Login failed. Please check your credentials.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="flex justify-center items-center min-h-screen bg-gray-100">
+            {!isAuthenticated ? (
+                <Card className="w-full max-w-md shadow-lg rounded-lg p-6">
+                    <Title level={3} className="text-center text-blue-600">Admin Login</Title>
+                    <div className="space-y-4">
+                        <Input
+                            type="email"
+                            placeholder="Admin Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="mb-2"
+                        />
+                        <Input.Password
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="mb-4"
+                        />
+                        <Button
+                            type="primary"
+                            block
+                            loading={loading}
+                            onClick={handleLogin}
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                        >
+                            Login
+                        </Button>
+                    </div>
+                </Card>
+            ) : (
+                <div className="text-center">
+                    <Title level={2} className="text-blue-600">Welcome, Admin!</Title>
+                    <Text className="text-lg">You have successfully logged in. Redirecting to Dashboard...</Text>
+                    <Spin size="large" className="mt-4" />
                 </div>
-            </main>
+            )}
         </div>
     );
 }

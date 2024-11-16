@@ -120,13 +120,14 @@ const Users = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center bg-gradient-to-r from-purple-500 to-blue-500 text-white p-4 rounded-lg shadow-lg">
-                <h2 className="text-2xl font-semibold">Users List</h2>
+            {/* Responsive header container with flex adjustments for smaller screens */}
+            <div className="flex flex-col sm:flex-row justify-between items-center bg-gradient-to-r from-purple-500 to-blue-500 text-white p-4 rounded-lg shadow-lg">
+                <h2 className="text-2xl font-semibold text-center sm:text-left">Users List</h2>
                 <Button
                     type="primary"
                     icon={<PlusOutlined />}
                     onClick={() => setIsModalOpen(true)}
-                    className="bg-green-500 hover:bg-green-600 text-white rounded-md px-4 py-2 shadow-lg"
+                    className="mt-4 sm:mt-0 bg-green-500 hover:bg-green-600 text-white rounded-md px-4 py-2 shadow-lg"
                 >
                     Add User
                 </Button>
@@ -138,6 +139,7 @@ const Users = () => {
                 rowKey="id"
                 pagination={{ pageSize: 6 }}
                 className="bg-white rounded-lg shadow-lg"
+                scroll={{ x: 600 }} // Table scrolls horizontally on small screens
                 locale={{ emptyText: "No users found" }}
             />
 
@@ -150,8 +152,13 @@ const Users = () => {
                 okText={loading ? <Spin /> : 'Add'}
                 cancelText="Cancel"
                 okButtonProps={{ disabled: loading }}
-                width="40%"
-                bodyStyle={{ padding: '10px', backgroundColor: '#f0f2f5' }}
+                width="90%" // Full width on smaller screens
+                styles={{
+                    body: {
+                        padding: '10px',
+                        backgroundColor: '#f0f2f5',
+                    },
+                }}
             >
                 <div className="space-y-4">
                     <Input
@@ -177,6 +184,7 @@ const Users = () => {
             </Modal>
 
             {/* Modal Form for Editing Users */}
+            {/* Modal Form for Editing Users */}
             <Modal
                 title="Edit User"
                 open={isEditModalOpen}
@@ -185,8 +193,11 @@ const Users = () => {
                 okText={loading ? <Spin /> : 'Update'}
                 cancelText="Cancel"
                 okButtonProps={{ disabled: loading }}
-                width="40%"
-                bodyStyle={{ padding: '10px', backgroundColor: '#f0f2f5' }}
+                width="90%"
+                style={{
+                    padding: '10px',
+                    backgroundColor: '#f0f2f5',
+                }}
             >
                 <div className="space-y-4">
                     <Input
@@ -210,6 +221,7 @@ const Users = () => {
                     />
                 </div>
             </Modal>
+
         </div>
     );
 };

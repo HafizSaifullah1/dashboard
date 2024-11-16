@@ -128,7 +128,7 @@ const Photos = () => {
   }
 
   return (
-    <div className="md:p-4 pt-10 px-4 bg-gray-900 text-gray-300 min-h-screen">
+    <div className="p-2 sm:p-4 pt-10 bg-gray-900 text-gray-300 min-h-screen">
       {/* Navbar */}
       <div className="flex justify-between items-center mb-4 p-4 bg-gray-800 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold text-white">Photos List</h2>
@@ -142,19 +142,31 @@ const Photos = () => {
       </div>
 
       {/* Photos Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {photos.map((photo) => (
           <Card
             key={photo.id}
-            className="bg-gray-800 shadow-md rounded-lg overflow-hidden"
-            cover={<img src={photo.url} alt={photo.name} className="w-full h-48 object-cover" />}
+            className="bg-gray-800 shadow-lg rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300"
           >
-            <h3 className="text-white font-semibold mb-2">{photo.name}</h3>
-            <div className="flex justify-between mt-2">
+            <div className="relative">
+              <img
+                src={photo.url}
+                alt={photo.name}
+                className="w-full h-48 object-cover rounded-t-lg"
+              />
+            </div>
+
+            <div className="p-4">
+              <h3 className="text-white font-semibold mb-2 truncate">{photo.name}</h3>
+            </div>
+
+            {/* Buttons section moved to the bottom */}
+            <div className="flex flex-col justify-between p-4 space-y-2">
               <Button
                 icon={<EditOutlined />}
                 onClick={() => openEditModal(photo)}
-                className="bg-gray-700 text-white hover:bg-gray-600"
+                className="bg-gray-700 text-white hover:bg-gray-600 w-full"
+                size="small"
               >
                 Edit
               </Button>
@@ -162,7 +174,8 @@ const Photos = () => {
                 icon={<DeleteOutlined />}
                 danger
                 onClick={() => handleDelete(photo.id, photo.url)}
-                className="bg-red-600  hover:bg-red-500"
+                className="bg-red-600 hover:bg-red-500 w-full"
+                size="small"
               >
                 Delete
               </Button>
@@ -171,10 +184,11 @@ const Photos = () => {
         ))}
       </div>
 
+
       {/* Add/Edit Photo Modal */}
       <Modal
         title={editingPhoto ? "Edit Photo Name" : "Upload Photo"}
-        visible={isModalVisible}
+        open={isModalVisible}  // Replace `visible` with `open`
         onCancel={() => {
           setIsModalVisible(false);
           setEditingPhoto(null);
@@ -194,7 +208,7 @@ const Photos = () => {
             {editingPhoto ? "Save" : "Upload"}
           </Button>,
         ]}
-        className="bg-gray-900 text-gray-300"
+        className="bg-gray-900 text-gray-300 max-w-[90%] md:max-w-[60%]"
       >
         {editingPhoto ? (
           <Input

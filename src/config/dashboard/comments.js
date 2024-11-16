@@ -89,52 +89,59 @@ const Comments = () => {
     }
 
     return (
-        <div className="p-6 bg-gradient-to-r from-purple-500 to-pink-500 min-h-screen text-white">
+        <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-r from-teal-400 to-indigo-500 min-h-screen text-white">
             {/* Navbar */}
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold">Comments List</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold text-white">Comments List</h2>
                 <Button
                     type="primary"
                     onClick={() => setIsModalVisible(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md shadow-lg"
+                    className="bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-md shadow-lg"
                 >
                     Add Comment
                 </Button>
             </div>
 
             {/* Comments List */}
-            <div className="space-y-4">
-                {comments.map((comment) => (
-                    <Card
-                        key={comment.id}
-                        className="p-4 bg-white text-black shadow-lg rounded-lg transition transform hover:scale-105"
-                    >
-                        <p className="text-lg font-medium">{comment.text}</p>
-                        <div className="flex justify-end mt-4 space-x-2">
-                            <Button
-                                icon={<EditOutlined />}
-                                onClick={() => openEditModal(comment)}
-                                className="bg-yellow-500 hover:bg-yellow-600 text-white rounded-full"
-                            >
-                                Edit
-                            </Button>
-                            <Button
-                                icon={<DeleteOutlined />}
-                                danger
-                                onClick={() => deleteComment(comment.id)}
-                                className="bg-red-500 hover:bg-red-600  rounded-full"
-                            >
-                                Delete
-                            </Button>
-                        </div>
-                    </Card>
-                ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 place-items-center">
+    {comments.map((comment) => (
+        <Card
+            key={comment.id}
+            className="p-8 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-500 text-white shadow-2xl rounded-3xl transform transition-all duration-300 hover:scale-105 hover:shadow-xl max-w-xs w-full"
+        >
+            {/* Comment Text */}
+            <p className="text-xl font-semibold text-center mb-6">{comment.text}</p>
+
+            {/* Buttons Section */}
+            <div className="flex flex-col gap-4 items-center">
+                {/* Edit Button */}
+                <Button
+                    icon={<EditOutlined />}
+                    onClick={() => openEditModal(comment)}
+                    className="bg-yellow-400 hover:bg-yellow-500 text-white rounded-full px-6 py-2 transition-transform transform hover:scale-110 duration-200"
+                >
+                    Edit
+                </Button>
+                {/* Delete Button */}
+                <Button
+                    icon={<DeleteOutlined />}
+                    danger
+                    onClick={() => deleteComment(comment.id)}
+                    className="bg-red-500 hover:bg-red-600 rounded-full px-6 py-2 transition-transform transform hover:scale-110 duration-200"
+                >
+                    Delete
+                </Button>
             </div>
+        </Card>
+    ))}
+</div>
+
+
 
             {/* Add/Edit Comment Modal */}
             <Modal
                 title={<span className="text-lg font-semibold">{editingComment ? "Edit Comment" : "Add Comment"}</span>}
-                visible={isModalVisible}
+                open={isModalVisible}
                 onCancel={() => {
                     setIsModalVisible(false);
                     setEditingComment(null);
